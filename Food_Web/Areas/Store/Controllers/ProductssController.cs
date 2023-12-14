@@ -689,13 +689,19 @@ namespace Food_Web.Areas.Store.Controllers
         }
 
 
-        public async Task<ActionResult> Sale()
+        public async Task<ActionResult> Sale(int? page)
         {
             var userId = User.Identity.GetUserId();
 
             var products = await db.Products.Where(p => p.DiscountPercent > 0 && p.Userid == userId).ToListAsync();
 
-            return View(products);
+            const int pageSize = 5; // Số sản phẩm hiển thị trên mỗi trang
+            var pageNumber = page ?? 1;
+
+            // Sử dụng ToPagedList để chia dữ liệu thành các trang
+            var pagedProducts = products.ToPagedList(pageNumber, pageSize);
+
+            return View(pagedProducts);
         }
 
         public async Task<ActionResult> CreateDiscount()

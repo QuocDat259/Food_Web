@@ -87,6 +87,43 @@ namespace Food_Web.Areas.Store.Controllers
             }
             return View("Create", category);
         }
+        // GET: Store/Categories/Edit/5
+        public ActionResult Edit(int? id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            Category category = db.Categories.Find(id);
+            if (category == null)
+            {
+                return HttpNotFound();
+            }
+            return View(category);
+        }
+
+        // POST: Store/Categories/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Edit([Bind(Include = "Categoryid,Categoryname,image")] Category category, HttpPostedFileBase Content)
+        {
+            if (ModelState.IsValid)
+            {
+                if (Content != null && Content.ContentLength > 0)
+                {
+                    var typeFile = Path.GetExtension(Content.FileName);
+                    category.image = category.Categoryid + typeFile;
+                    var filePath = Path.Combine(Server.MapPath("~/Content/products"), category.image);
+                    Content.SaveAs(filePath);
+                }
+
+                db.Entry(category).State = EntityState.Modified;
+                db.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            return View(category);
+        }
+
 
     }
 }
