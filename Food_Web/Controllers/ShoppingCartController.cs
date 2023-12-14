@@ -948,11 +948,10 @@ namespace Food_Web.Models
             string currentUserId = User.Identity.GetUserId();
             FoodcontextDB context = new FoodcontextDB();
             bool insufficientStock = false;
-            List<Order_detail> orderDetails = new List<Order_detail>(); // Tạo danh sách để lưu thông tin chi tiết đơn hàng
+            List<Order_detail> orderDetails = new List<Order_detail>();
             string voucherCode = Session["VoucherCode"] as string;
             double? totalpriceinvoucher = Session["TotalPriceAfterDiscount"] as double?;
             double originalAmount = 0;
-
 
             int newOrderNo = context.Orders.Max(o => (int?)o.Od_id) ?? 0;
             newOrderNo++;
@@ -985,10 +984,9 @@ namespace Food_Web.Models
                         {
                             insufficientStock = true;
                             ViewBag.ErrorMessage = "Sản phẩm " + product.Productname + " không đủ hàng.";
-                            // Redirect to some action to handle the error and display the message
                             return RedirectToAction("HandleError");
                         }
-                        // Tạo chi tiết đơn hàng và lưu vào cơ sở dữ liệu
+
                         Order_detail ctdh = new Order_detail()
                         {
                             Od_id = newOrderNo,
@@ -1000,39 +998,41 @@ namespace Food_Web.Models
                             VoucherCode = voucherCode,
                             Totalinvoucher = totalpriceinvoucher
                         };
-                        if (voucherCode != null && totalpriceinvoucher.HasValue && voucherCode == ctdh.VoucherCode && totalpriceinvoucher == ctdh.Totalinvoucher)
+
+                        if (voucherCode != null && totalpriceinvoucher.HasValue &&
+                            voucherCode == ctdh.VoucherCode && totalpriceinvoucher == ctdh.Totalinvoucher)
                         {
                             var discount = context.Discounts.SingleOrDefault(x => x.Code == voucherCode);
-                            if (discount != null && discount.SoLuong > 0 || discount.Status == true)
+                            if (discount != null && (discount.SoLuong > 0 || discount.Status == true))
                             {
                                 discount.SoLuong -= 1;
                                 UpdateDiscountStatus(voucherCode);
                             }
                             else
                             {
-                                string code = " Voucher không tồn tại hoặc hết hạn";
+                                ViewBag.ErrorMessage = "Voucher không tồn tại hoặc đã hết hạn";
+                                return RedirectToAction("HandleError");
                             }
                         }
-                        //context.Order_detail.Add(ctdh);
-                        //orderDetails.Add(ctdh);
+
+                        context.Order_detail.Add(ctdh);
+                        orderDetails.Add(ctdh);
 
                         double? tt_money = ctdh.tt_money;
                         originalAmount += tt_money ?? 0;
 
-
-                        // Trừ đi số lượng đã mua từ sản phẩm
                         if (product != null)
                         {
-                            product.Soluong -= cart.Quantity; // Giả sử Soluong là số lượng sản phẩm
-                            //context.SaveChanges(); // Lưu thay đổi số lượng vào cơ sở dữ liệu
+                            product.Soluong -= cart.Quantity;
+                            context.SaveChanges();
                         }
 
                         context.CartItems.Remove(cart);
-                        // context.SaveChanges();
-
+                        context.SaveChanges();
                     }
                 }
             }
+
             string displayAmount = (originalAmount * 100).ToString();
             string url = ConfigurationManager.AppSettings["vnp_Url"];
             string returnUrl = ConfigurationManager.AppSettings["ReturnUrl"];
@@ -1041,19 +1041,19 @@ namespace Food_Web.Models
 
             PayLib pay = new PayLib();
 
-            pay.AddRequestData("vnp_Version", "2.1.0"); //Phiên bản api mà merchant kết nối. Phiên bản hiện tại là 2.1.0
-            pay.AddRequestData("vnp_Command", "pay"); //Mã API sử dụng, mã cho giao dịch thanh toán là 'pay'
-            pay.AddRequestData("vnp_TmnCode", tmnCode); //Mã website của merchant trên hệ thống của VNPAY (khi đăng ký tài khoản sẽ có trong mail VNPAY gửi về)
-            pay.AddRequestData("vnp_Amount", displayAmount); // Sử dụng trực tiếp giá trị `Gia`+//số tiền cần thanh toán, công thức: số tiền * 100 - ví dụ 10.000 (mười nghìn đồng) --> 1000000
-            pay.AddRequestData("vnp_BankCode", ""); //Mã Ngân hàng thanh toán (tham khảo: https://sandbox.vnpayment.vn/apis/danh-sach-ngan-hang/), có thể để trống, người dùng có thể chọn trên cổng thanh toán VNPAY
-            pay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss")); //ngày thanh toán theo định dạng yyyyMMddHHmmss
-            pay.AddRequestData("vnp_CurrCode", "VND"); //Đơn vị tiền tệ sử dụng thanh toán. Hiện tại chỉ hỗ trợ VND
-            pay.AddRequestData("vnp_IpAddr", Util.GetIpAddress()); //Địa chỉ IP của khách hàng thực hiện giao dịch
-            pay.AddRequestData("vnp_Locale", "vn"); //Ngôn ngữ giao diện hiển thị - Tiếng Việt (vn), Tiếng Anh (en)
-            pay.AddRequestData("vnp_OrderInfo", "Thanh toan don hang"); //Thông tin mô tả nội dung thanh toán
-            pay.AddRequestData("vnp_OrderType", "other"); //topup: Nạp tiền điện thoại - billpayment: Thanh toán hóa đơn - fashion: Thời trang - other: Thanh toán trực tuyến
-            pay.AddRequestData("vnp_ReturnUrl", returnUrl); //URL thông báo kết quả giao dịch khi Khách hàng kết thúc thanh toán
-            pay.AddRequestData("vnp_TxnRef", oderid); //mã hóa đơn
+            pay.AddRequestData("vnp_Version", "2.1.0");
+            pay.AddRequestData("vnp_Command", "pay");
+            pay.AddRequestData("vnp_TmnCode", tmnCode);
+            pay.AddRequestData("vnp_Amount", displayAmount);
+            pay.AddRequestData("vnp_BankCode", "");
+            pay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
+            pay.AddRequestData("vnp_CurrCode", "VND");
+            pay.AddRequestData("vnp_IpAddr", Util.GetIpAddress());
+            pay.AddRequestData("vnp_Locale", "vn");
+            pay.AddRequestData("vnp_OrderInfo", "Thanh toan don hang");
+            pay.AddRequestData("vnp_OrderType", "other");
+            pay.AddRequestData("vnp_ReturnUrl", returnUrl);
+            pay.AddRequestData("vnp_TxnRef", oderid);
 
             string paymentUrl = pay.CreateRequestUrl(url, hashSecret);
 
@@ -1063,6 +1063,8 @@ namespace Food_Web.Models
 
         public ActionResult PaymentVNPayConfirm(Result result)
         {
+            double originalAmount = 0; // Thêm dòng này để khai báo biến originalAmount
+
             if (result != null && result.errorCode == "0")
             {
                 try
@@ -1080,7 +1082,7 @@ namespace Food_Web.Models
                         Od_status = false,
                         Od_address = null,
                         VoidanOder = true,
-                        idthanhtoan = 2
+                        idthanhtoan = 3
                     };
 
                     context.Orders.Add(objOrder);
@@ -1138,6 +1140,9 @@ namespace Food_Web.Models
                                 context.Order_detail.Add(ctdh);
                                 orderDetails.Add(ctdh);
 
+                                double? tt_money = ctdh.tt_money;
+                                originalAmount += tt_money ?? 0;
+
                                 if (product != null)
                                 {
                                     product.Soluong -= cart.Quantity;
@@ -1167,6 +1172,7 @@ namespace Food_Web.Models
                     return RedirectToAction("HandleError");
                 }
 
+                ViewBag.OriginalAmount = originalAmount; // Thêm dòng này để truyền giá trị originalAmount cho View
                 return View();
             }
             else
@@ -1175,8 +1181,6 @@ namespace Food_Web.Models
                 return View();
             }
         }
-
-
     }
 
-}       
+}    
