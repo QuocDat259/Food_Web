@@ -4626,6 +4626,9 @@
     <Content Include="Areas\Store\Views\Productss\EditDiscount.cshtml" />
     <Content Include="App_Browsers\qt.browser" />
     <Content Include="Areas\Store\Views\Categories\Edit.cshtml" />
+    <Content Include="..\.editorconfig">
+      <Link>.editorconfig</Link>
+    </Content>
     <None Include="Scripts\jquery-3.4.1.intellisense.js" />
     <Content Include="Scripts\jquery-3.4.1.slim.js" />
     <Content Include="Scripts\jquery-3.4.1.slim.min.js" />
