@@ -150,7 +150,7 @@ namespace Food_Web.Areas.Admin.Controllers
 
                 return Json(result);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle any errors and return an error response to the client
                 var result = new

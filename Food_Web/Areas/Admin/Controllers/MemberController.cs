@@ -7,7 +7,6 @@ using System.Web.Mvc;
 using System.Data.Entity;
 using System.Net;
 using System.Web;
-using Microsoft.AspNet.Identity;
 using static Food_Web.Models.ManageController;
 
 namespace Food_Web.Areas.Admin.Controllers

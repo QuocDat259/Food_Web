@@ -12,6 +12,13 @@
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">@Html.ActionLink("Trang Chủ", "Index", "Homes") / @Html.ActionLink("Sản Phẩm nổi bật", "Index", "hot")</h6>
     </div>
+    <form id="searchForm" action="@Url.Action("Sale", "Productss")" method="get" class="form-inline mb-3">
+        <div class="form-group mr-2">
+            <label for="searchString" class="mr-2">Tìm kiếm:</label>
+            <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" />
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm Kiếm</button>
+    </form>
     <table class="table">
         <tr>
             <td class="border">

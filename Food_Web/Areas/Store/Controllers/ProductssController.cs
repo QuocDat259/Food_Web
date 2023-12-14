@@ -22,7 +22,6 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DevExpress.Skins;
 using PagedList;
-using System.Linq;
 namespace Food_Web.Areas.Store.Controllers
 {
     public class ProductssController : Controller
@@ -35,7 +34,7 @@ namespace Food_Web.Areas.Store.Controllers
             // Lấy thông tin người dùng đăng nhập
             var userId = User.Identity.GetUserId();
 
-            var pageSize = 10; // Số sản phẩm hiển thị trên mỗi trang
+            var pageSize = 5; // Số sản phẩm hiển thị trên mỗi trang
             var pageNumber = (page ?? 1); // Trang hiện tại
 
             // Lấy danh sách sản phẩm thuộc người dùng đăng nhập và thực hiện tìm kiếm nếu có
@@ -597,18 +596,24 @@ namespace Food_Web.Areas.Store.Controllers
         }
 
 
-        public ActionResult hot()
+        public ActionResult hot(int? page)
         {
             // Lấy thông tin người dùng đăng nhập
             var userId = User.Identity.GetUserId();
 
             // Lấy danh sách sản phẩm thuộc người dùng đăng nhập và có thuộc tính is_hot bằng true
-            var products = db.Products
+            var productsQuery = db.Products
                 .Where(p => p.Userid == userId && p.is_hot == true)
-                .Include(p => p.Category)
-               ;
+                .Include(p => p.Category);
 
-            return View(products.ToList());
+            const int pageSize = 5; // Số sản phẩm hiển thị trên mỗi trang
+            var pageNumber = page ?? 1; // Trang hiện tại
+
+            // Sử dụng ToPagedList để chia dữ liệu thành các trang
+            var pagedProducts = productsQuery.OrderBy(p => p.Productid)
+                                              .ToPagedList(pageNumber, pageSize);
+
+            return View(pagedProducts);
         }
         private List<SelectListItem> GetProductList(string userId)
         {
@@ -689,11 +694,19 @@ namespace Food_Web.Areas.Store.Controllers
         }
 
 
-        public async Task<ActionResult> Sale(int? page)
+        public async Task<ActionResult> Sale(int? page, string searchString)
         {
             var userId = User.Identity.GetUserId();
 
-            var products = await db.Products.Where(p => p.DiscountPercent > 0 && p.Userid == userId).ToListAsync();
+            var productsQuery = db.Products.Where(p => p.DiscountPercent > 0 && p.Userid == userId);
+
+            // Thực hiện tìm kiếm nếu có chuỗi tìm kiếm
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                productsQuery = productsQuery.Where(p => p.Productname.Contains(searchString));
+            }
+
+            var products = await productsQuery.ToListAsync();
 
             const int pageSize = 5; // Số sản phẩm hiển thị trên mỗi trang
             var pageNumber = page ?? 1;
@@ -701,8 +714,12 @@ namespace Food_Web.Areas.Store.Controllers
             // Sử dụng ToPagedList để chia dữ liệu thành các trang
             var pagedProducts = products.ToPagedList(pageNumber, pageSize);
 
+            // Truyền searchString để giữ giá trị nhập vào ô tìm kiếm
+            ViewBag.SearchString = searchString;
+
             return View(pagedProducts);
         }
+
 
         public async Task<ActionResult> CreateDiscount()
         {
@@ -905,33 +922,29 @@ namespace Food_Web.Areas.Store.Controllers
 
         //    return View(products);
         //}
-        public async Task<ActionResult> giamgiah()
+        public async Task<ActionResult> giamgiah(int? page)
         {
             var userId = User.Identity.GetUserId();
 
-            DateTime now = DateTime.Now; // Lấy thời gian thực hiện tại
+            DateTime now = DateTime.Now;
 
             var products = await db.Products
                 .Where(p => p.GiaGiamTheoKhungGio > 0 && p.Userid == userId)
                 .ToListAsync();
 
-            // Cập nhật trạng thái dựa trên thời gian thực
             foreach (var product in products)
             {
-                if (product.DiscountStartTime <= now && now <= product.DiscountEndTime)
-                {
-                    product.Tinhtranggiamgia = true;
-                }
-                else
-                {
-                    product.Tinhtranggiamgia = false;
-                }
+                product.Tinhtranggiamgia = product.DiscountStartTime <= now && now <= product.DiscountEndTime;
             }
 
-            // Lưu các thay đổi vào cơ sở dữ liệu
             await db.SaveChangesAsync();
 
-            return View(products);
+            const int pageSize = 5; // Số sản phẩm trên mỗi trang
+            int pageNumber = page ?? 1; // Trang hiện tại
+
+            var pagedProducts = products.ToPagedList(pageNumber, pageSize);
+
+            return View(pagedProducts);
         }
 
         public async Task<ActionResult> Creategiamgiah()

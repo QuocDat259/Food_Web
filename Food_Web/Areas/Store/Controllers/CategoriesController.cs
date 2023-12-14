@@ -28,7 +28,7 @@ namespace Food_Web.Areas.Store.Controllers
                 categories = categories.Where(c => c.Categoryname.Contains(searchString));
             }
 
-            const int pageSize = 10;
+            const int pageSize = 5;
             var pageNumber = page ?? 1;
 
             // Thêm OrderBy vào đây để sắp xếp dữ liệu
